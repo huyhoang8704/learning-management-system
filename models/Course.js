@@ -23,12 +23,12 @@ const courseSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: true,
     },
-    instructor: {
+    instructorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

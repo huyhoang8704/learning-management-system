@@ -3,6 +3,7 @@ const router = express.Router();
 const courseController = require("../controllers/courseController");
 const auth = require("../middlewares/authTokenMiddleware");
 const { authorize } = require("../middlewares/authRoleMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 
 /**
  * @swagger
@@ -109,34 +110,34 @@ router.get("/slug/:slug", auth, courseController.getCourseBySlug);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - title
- *               - category
+ *               - description
+ *               - categoryId
  *             properties:
  *               title:
  *                 type: string
- *                 example: "Mastering Node.js and Express"
+ *                 example: "ReactJS Fundamentals"
  *               description:
  *                 type: string
- *                 example: "Learn how to build scalable web applications using Node.js, Express, and MongoDB."
- *               category:
+ *                 example: "Khóa học nền tảng về ReactJS, bao gồm hooks, router và state management."
+ *               categoryId:
  *                 type: string
- *                 description: ObjectId of category
  *                 example: "69032935c3d709807d726ffc"
  *               level:
  *                 type: string
  *                 enum: [beginner, intermediate, advanced]
- *                 example: "intermediate"
+ *                 example: "beginner"
  *               thumbnail:
  *                 type: string
- *                 description: URL to course thumbnail
- *                 example: "https://example.com/thumbnails/nodejs-course.png"
+ *                 format: binary
+ *                 description: Ảnh thumbnail (tùy chọn)
  *     responses:
  *       201:
- *         description: Course created successfully
+ *         description: Khóa học được tạo thành công
  *         content:
  *           application/json:
  *             schema:
@@ -147,99 +148,84 @@ router.get("/slug/:slug", auth, courseController.getCourseBySlug);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Course created successfully
+ *                   example: "Course created successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     _id:
  *                       type: string
- *                       example: "671dcd9b8f3e3b1768b8ef2a"
+ *                       example: "671ef4e68a1b2b001f4e9982"
  *                     title:
  *                       type: string
- *                       example: "Mastering Node.js and Express"
- *                     slug:
- *                       type: string
- *                       example: "mastering-node-js-and-express"
+ *                       example: "ReactJS Fundamentals"
  *                     description:
  *                       type: string
- *                       example: "Learn how to build scalable web applications using Node.js, Express, and MongoDB."
+ *                       example: "Khóa học nền tảng về ReactJS, bao gồm hooks, router và state management."
  *                     category:
- *                       type: object
- *                       properties:
- *                         _id:
- *                           type: string
- *                           example: "671dcdf88f3e3b1768b8ef2b"
- *                         name:
- *                           type: string
- *                           example: "Web Development"
- *                         slug:
- *                           type: string
- *                           example: "web-development"
+ *                       type: string
+ *                       example: "Web Development"
  *                     instructor:
  *                       type: string
- *                       example: "671dc9e48f3e3b1768b8ef1b"
+ *                       example: "Nguyễn Văn A"
  *                     level:
  *                       type: string
- *                       example: "intermediate"
- *                     isPublished:
- *                       type: boolean
- *                       example: false
- *                     createdAt:
+ *                       example: "Beginner"
+ *                     thumbnail:
  *                       type: string
- *                       format: date-time
- *                       example: "2025-10-26T12:00:00.000Z"
+ *                       example: "https://xyz.supabase.co/storage/v1/object/public/course-thumbnails/123-reactjs.png"
  *       400:
- *         description: Invalid category ID
- *       401:
- *         description: Unauthorized
+ *         description: Thiếu dữ liệu yêu cầu
  *       500:
- *         description: Internal server error
+ *         description: Lỗi server khi tạo khóa học
  */
-router.post("/", auth, authorize(["admin", "teacher"]), courseController.createCourse);
+router.post("/", auth, authorize(["admin", "teacher"]), upload.single("thumbnail"), courseController.createCourse);
+
 
 
 /**
  * @swagger
  * /api/courses/{id}:
  *   put:
- *     summary: Update an existing course (Admin or course owner)
- *     description: Allows **admin** or **teacher who owns the course** to update course details. Slug will auto-update if title changes.
+ *     summary: Update a course (Teacher/Admin)
+ *     description: Cho phép **teacher** hoặc **admin** cập nhật thông tin của một khóa học. Có thể thay đổi thông tin cơ bản hoặc upload ảnh thumbnail mới.
  *     tags: [Course]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID của khóa học cần cập nhật
  *         schema:
  *           type: string
- *         description: Course ID
+ *           example: "6903bcd7c32f7b0406a35a92"
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               title:
  *                 type: string
- *                 example: "Updated: Node.js and Express Masterclass"
+ *                 example: "ReactJS Advanced Concepts"
  *               description:
  *                 type: string
- *                 example: "Updated description with more advanced topics"
- *               category:
+ *                 example: "Khóa học nâng cao về ReactJS, bao gồm performance optimization và Redux."
+ *               categoryId:
  *                 type: string
- *                 example: "671dcdf88f3e3b1768b8ef2b"
+ *                 example: "69032935c3d709807d726ffc"
  *               level:
  *                 type: string
  *                 enum: [beginner, intermediate, advanced]
  *                 example: "advanced"
- *               isPublished:
- *                 type: boolean
- *                 example: true
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *                 description: Ảnh thumbnail mới (tùy chọn)
  *     responses:
  *       200:
- *         description: Course updated successfully
+ *         description: Cập nhật khóa học thành công
  *         content:
  *           application/json:
  *             schema:
@@ -250,40 +236,41 @@ router.post("/", auth, authorize(["admin", "teacher"]), courseController.createC
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Course updated successfully
+ *                   example: "Course updated successfully"
  *                 data:
  *                   type: object
  *                   properties:
  *                     _id:
  *                       type: string
- *                       example: "671dcd9b8f3e3b1768b8ef2a"
+ *                       example: "671ef4e68a1b2b001f4e9982"
  *                     title:
  *                       type: string
- *                       example: "Updated: Node.js and Express Masterclass"
- *                     slug:
+ *                       example: "ReactJS Advanced Concepts"
+ *                     description:
  *                       type: string
- *                       example: "updated-node-js-and-express-masterclass"
- *                     category:
+ *                       example: "Khóa học nâng cao về ReactJS, bao gồm performance optimization và Redux."
+ *                     categoryId:
  *                       type: string
- *                       example: "671dcdf88f3e3b1768b8ef2b"
+ *                     instructorId:
+ *                       type: string
  *                     level:
  *                       type: string
  *                       example: "advanced"
- *                     isPublished:
- *                       type: boolean
- *                       example: true
- *                     updatedAt:
+ *                     thumbnail:
  *                       type: string
- *                       format: date-time
- *                       example: "2025-10-26T13:12:00.000Z"
- *       403:
- *         description: Not authorized to update this course
+ *                       example: "https://xyz.supabase.co/storage/v1/object/public/course-thumbnails/updated-reactjs.png"
  *       404:
- *         description: Course not found
+ *         description: Không tìm thấy khóa học
  *       500:
- *         description: Internal server error
+ *         description: Lỗi server khi cập nhật khóa học
  */
-router.put("/:id", auth, authorize(["admin", "teacher"]), courseController.updateCourse);
+router.put(
+  "/:id",
+  auth,
+  authorize(["admin", "teacher"]),
+  upload.single("thumbnail"),
+  courseController.updateCourse
+);
 
 
 /**

@@ -1,33 +1,56 @@
 const Course = require("../models/Course");
 const Category = require("../models/Category");
+const slugify = require("slugify");
+const supabase = require("../config/supabase");
 
 exports.createCourse = async (req, res) => {
   try {
-    const { title, description, category, level, thumbnail } = req.body;
+    const { title, description, categoryId, level } = req.body;
+    let thumbnailUrl = "";
+    const instructorId = req.user.id;
 
-    const categoryExists = await Category.findById(category);
-    if (!categoryExists)
-      return res.status(400).json({ success: false, message: "Invalid category ID" });
+    // Upload ảnh lên Supabase nếu có
+    if (req.file) {
+      const file = req.file;
+      const fileName = `${Date.now()}-${slugify(title)}.${file.originalname.split(".").pop()}`;
 
-    const course = await Course.create({
+      const { data, error } = await supabase.storage
+        .from("course-thumbnails")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Lấy public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("course-thumbnails")
+        .getPublicUrl(fileName);
+
+      thumbnailUrl = publicUrlData.publicUrl;
+    }
+
+    const newCourse = await Course.create({
       title,
       description,
-      category,
+      categoryId,
+      instructorId,
       level,
-      thumbnail,
-      instructor: req.user.id,
+      thumbnail: thumbnailUrl,
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Course created successfully",
-      data: course,
+      data: newCourse,
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (err) {
+    console.error("Error creating course:", err);
+    res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error.message,
+      message: "Error creating course",
+      error: err.message,
     });
   }
 };
@@ -53,7 +76,7 @@ exports.getAllCourses = async (req, res) => {
     if (category) {
       filter.$or = [
         { "category.slug": category },
-        { "category._id": category },
+        { "category.name": category },
       ];
     }
 
@@ -71,8 +94,8 @@ exports.getAllCourses = async (req, res) => {
     const total = await Course.countDocuments(filter);
 
     const courses = await Course.find(filter)
-      .populate("category", "name slug")
-      .populate("instructor", "name email role")
+      .populate("categoryId", "name slug")
+      .populate("instructorId", "name email role")
       .sort(sortOption)
       .skip(skip)
       .limit(parseInt(limit));
@@ -124,30 +147,60 @@ exports.getCourseBySlug = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
-    if (!course)
-      return res.status(404).json({ success: false, message: "Course not found" });
+    const { id } = req.params;
+    const { title, description, categoryId, level } = req.body;
 
-    if (
-      req.user.role !== "admin" &&
-      req.user.id.toString() !== course.instructor.toString()
-    ) {
-      return res.status(403).json({ success: false, message: "Not authorized" });
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
     }
 
-    Object.assign(course, req.body);
+    let thumbnailUrl = course.thumbnail;
+
+    // === Nếu có upload ảnh mới ===
+    if (req.file) {
+      const file = req.file;
+      const fileName = `${Date.now()}-${slugify(title || course.title)}.${file.originalname.split(".").pop()}`;
+
+      const { data, error } = await supabase.storage
+        .from("course-thumbnails")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("course-thumbnails")
+        .getPublicUrl(fileName);
+
+      thumbnailUrl = publicUrlData.publicUrl;
+    }
+
+    // === Cập nhật thông tin ===
+    course.title = title || course.title;
+    course.description = description || course.description;
+    course.categoryId = categoryId || course.categoryId;
+    course.level = level || course.level;
+    course.thumbnail = thumbnailUrl;
+
     await course.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Course updated successfully",
       data: course,
     });
-  } catch (error) {
-    return res.status(500).json({
+  } catch (err) {
+    console.error("Error updating course:", err);
+    res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error.message,
+      message: "Error updating course",
+      error: err.message,
     });
   }
 };
@@ -185,7 +238,7 @@ exports.deleteCourse = async (req, res) => {
 
     if (
       req.user.role !== "admin" &&
-      req.user.id.toString() !== course.instructor.toString()
+      req.user.id.toString() !== course.instructorId.toString()
     ) {
       return res.status(403).json({ success: false, message: "Not authorized" });
     }
