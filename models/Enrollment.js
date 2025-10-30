@@ -20,12 +20,6 @@ const enrollmentSchema = new mongoose.Schema(
       type: Number,
       default: 0, // phần trăm hoàn thành (0–100)
     },
-    completedLessons: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Lesson",
-      },
-    ],
     status: {
       type: String,
       enum: ["Active", "Completed", "Dropped"],
@@ -41,4 +35,4 @@ const enrollmentSchema = new mongoose.Schema(
 // Một sinh viên chỉ có thể ghi danh 1 lần cho 1 khóa học
 enrollmentSchema.index({ course: 1, student: 1 }, { unique: true });
 
-module.exports = mongoose.model("Enrollment", enrollmentSchema);
+module.exports = mongoose.model("Enrollment", enrollmentSchema, "enrollments");

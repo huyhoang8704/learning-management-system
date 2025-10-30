@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoute');
 const userProfileRoutes = require('./routes/userProfileRoute');
 const categoryRoutes = require('./routes/categoryRoute');
 const courseRoutes = require('./routes/courseRoute');
+const enrollmentRoutes = require('./routes/enrollmentRoute');
 
 const port = process.env.PORT || 3000;
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', userProfileRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
 
 
 
