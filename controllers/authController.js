@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
 
 
 // Hàm tạo JWT
@@ -15,41 +16,52 @@ function signToken(user) {
 // Đăng ký (user)
 const register = async (req, res, next) => {
     try {
-        const { name, email, password, phone } = req.body;
-        if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Please provide name, email, password and phone number' });
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ error: 'Please provide name, email, password' });
         const existingEmail = await User.findOne({ email });
         if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
 
-        const existingPhone = await User.findOne({ phone });
-        if (existingPhone) return res.status(400).json({ error: 'Phone number already registered' });
-
         // Tạo user với role user
-        const user = await User.create({ name, email, password, phone, role: 'user' });
+        const user = await User.create({ name, email, password, role: 'student' });
+        await UserProfile.create({ user: user._id });
         const token = signToken(user);
 
         res.status(201).json({
             token,
-            user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
         });
     } catch (err) { next(err); }
 };
 // Đăng ký (admin)
 const registerAdmin = async (req, res) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password} = req.body;
         const existingEmail = await User.findOne({ email });
         if (existingEmail) return res.status(400).json({ message: 'Email already exists' });
-        const existingPhone = await User.findOne({ phone });
-        if (existingPhone) return res.status(400).json({ message: 'Phone number already exists' });
 
         // Tạo user với role admin
-        const user = await User.create({ name, email, password, phone, role: 'admin' });
+        const user = await User.create({ name, email, password, role: 'admin' });
 
         res.status(201).json({ token: signToken(user), user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+// Đăng ký (teacher)
+const registerTeacher = async (req, res) => {
+    try {
+        const { name, email, password} = req.body;
+        const existingEmail = await User.findOne({ email });
+        if (existingEmail) return res.status(400).json({ message: 'Email already exists' });
+
+        // Tạo user với role teacher
+        const user = await User.create({ name, email, password, role: 'teacher' });
+
+        res.status(201).json({ token: signToken(user), user });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
 
 // Đăng nhập
 const login = async (req, res, next) => {
@@ -84,4 +96,5 @@ module.exports = {
     login, 
     me,
     registerAdmin, 
+    registerTeacher,
 };

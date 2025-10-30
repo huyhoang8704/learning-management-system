@@ -1,0 +1,205 @@
+const Course = require("../models/Course");
+const Category = require("../models/Category");
+
+exports.createCourse = async (req, res) => {
+  try {
+    const { title, description, category, level, thumbnail } = req.body;
+
+    const categoryExists = await Category.findById(category);
+    if (!categoryExists)
+      return res.status(400).json({ success: false, message: "Invalid category ID" });
+
+    const course = await Course.create({
+      title,
+      description,
+      category,
+      level,
+      thumbnail,
+      instructor: req.user.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Course created successfully",
+      data: course,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.getAllCourses = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search, category, level, sort } = req.query;
+
+    const baseFilter =
+      req.user?.role === "admin" || req.user?.role === "teacher"
+        ? {}
+        : { isPublished: true };
+
+    const filter = { ...baseFilter };
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (category) {
+      filter.$or = [
+        { "category.slug": category },
+        { "category._id": category },
+      ];
+    }
+
+    if (level) {
+      filter.level = level;
+    }
+
+    let sortOption = { createdAt: -1 }; // default: newest
+    if (sort === "oldest") sortOption = { createdAt: 1 };
+    if (sort === "price_asc") sortOption = { price: 1 };
+    if (sort === "price_desc") sortOption = { price: -1 };
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    const total = await Course.countDocuments(filter);
+
+    const courses = await Course.find(filter)
+      .populate("category", "name slug")
+      .populate("instructor", "name email role")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched courses successfully",
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      data: courses,
+    });
+  } catch (error) {
+    console.error("❌ Error in getAllCourses:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.getCourseBySlug = async (req, res) => {
+  try {
+    const course = await Course.findOne({ slug: req.params.slug })
+      .populate("category", "name slug")
+      .populate("instructor", "name email");
+
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    if (!course.isPublished && req.user?.role === "student") {
+      return res.status(403).json({ success: false, message: "Course not published yet" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched course successfully",
+      data: course,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+exports.updateCourse = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    if (
+      req.user.role !== "admin" &&
+      req.user.id.toString() !== course.instructor.toString()
+    ) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    Object.assign(course, req.body);
+    await course.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Course updated successfully",
+      data: course,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ Publish / Unpublish course (Admin only)
+exports.togglePublish = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    course.isPublished = !course.isPublished;
+    await course.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Course ${course.isPublished ? "published" : "unpublished"} successfully`,
+      data: course,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Delete course (Admin / Instructor = owner)
+exports.deleteCourse = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    if (
+      req.user.role !== "admin" &&
+      req.user.id.toString() !== course.instructor.toString()
+    ) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    await course.deleteOne();
+    return res.status(200).json({
+      success: true,
+      message: "Course deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};

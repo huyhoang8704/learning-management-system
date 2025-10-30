@@ -9,6 +9,9 @@ require("dotenv").config();
 const connectDB = require('./config/mongoDB');
 const swaggerDocs = require('./config/swagger');
 const authRoutes = require('./routes/authRoute');
+const userProfileRoutes = require('./routes/userProfileRoute');
+const categoryRoutes = require('./routes/categoryRoute');
+const courseRoutes = require('./routes/courseRoute');
 
 const port = process.env.PORT || 3000;
 
@@ -21,10 +24,13 @@ app.use(morgan("dev"));
 swaggerDocs(app); // Initialize Swagger documentation
 
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', userProfileRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/courses', courseRoutes);
 
 
 
-app.get('/healthcheck',(req, res) => {
+app.get('/',(req, res) => {
     res.send('API is running...')
 })
 

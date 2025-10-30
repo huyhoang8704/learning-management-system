@@ -31,9 +31,6 @@ const authorize = require('../middlewares/authRoleMiddleware').authorize;
  *         password:
  *           type: string
  *           example: "123456"
- *         phone:
- *           type: string
- *           example: "0912345678"
  */
 
 /**
@@ -80,6 +77,31 @@ router.post('/register', AuthController.register);
  *         description: Unauthorized
  */
 router.post('/register/admin', auth, authorize('admin'), AuthController.registerAdmin);
+
+
+/**
+ * @swagger
+ * /api/auth/register/teacher:
+ *   post:
+ *     summary: Register new teacher (Admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       201:
+ *         description: Teacher registered successfully
+ *       400:
+ *         description: Email already exists
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/register/teacher', auth, authorize('admin'), AuthController.registerTeacher);
 
 /**
  * @swagger

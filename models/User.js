@@ -23,14 +23,10 @@ const userSchema = new mongoose.Schema(
             required: [true, 'Password is required'],
             minlength: [3, 'Password must be at least 6 characters long']
         },
-        phone: {
-            type: String,
-            match: [/^\d{10,15}$/, 'Phone number must contain only digits and be between 10 to 15 characters long']
-        },
         role: {
             type: String,
-            enum: ['user', 'admin'],
-            default: 'user'
+            enum: ['student', 'teacher', 'admin'],
+            default: 'student'
         },
     },
     {
