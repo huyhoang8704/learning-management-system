@@ -121,8 +121,16 @@ exports.getAllCourses = async (req, res) => {
 exports.getCourseBySlug = async (req, res) => {
   try {
     const course = await Course.findOne({ slug: req.params.slug })
-      .populate("category", "name slug")
-      .populate("instructor", "name email");
+      .populate("categoryId", "name slug")
+      .populate("instructorId", "name email")
+      .populate({
+        path: "lessons", // tên virtual populate trong Course model (nếu có)
+        options: { sort: { order: 1 } }, // sắp xếp theo thứ tự
+        populate: {
+          path: "contents", // populate lesson contents
+          options: { sort: { order: 1 } },
+        },
+      });
 
     if (!course)
       return res.status(404).json({ success: false, message: "Course not found" });
@@ -137,6 +145,7 @@ exports.getCourseBySlug = async (req, res) => {
       data: course,
     });
   } catch (error) {
+    console.error("❌ Error in getCourseBySlug:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

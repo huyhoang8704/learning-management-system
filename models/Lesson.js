@@ -11,33 +11,24 @@ const lessonSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    content: {
+    description: {
       type: String,
       default: "",
-    },
-    videoUrl: {
-      type: String,
-      default: "",
-    },
-    type: {
-      type: String,
-      enum: ["Video", "Reading", "Quiz"],
-      default: "Reading",
-    },
-    duration: {
-      type: Number, // minutes
-      default: 0,
     },
     order: {
       type: Number,
       required: true,
-    },
-    isPreview: {
-      type: Boolean,
-      default: false,
-    },
+    }
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Virtual populate: Lesson -> LessonContents
+lessonSchema.virtual("contents", {
+  ref: "LessonContent",
+  localField: "_id",
+  foreignField: "lesson",
+  justOne: false,
+});
 
 module.exports = mongoose.model("Lesson", lessonSchema, "lessons");

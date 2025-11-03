@@ -43,7 +43,7 @@ const courseSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 courseSchema.pre("save", function (next) {
@@ -51,6 +51,14 @@ courseSchema.pre("save", function (next) {
     this.slug = slugify(this.title, { lower: true, strict: true });
   }
   next();
+});
+
+// Virtual populate: Course -> Lessons
+courseSchema.virtual("lessons", {
+  ref: "Lesson",
+  localField: "_id",
+  foreignField: "course",
+  justOne: false,
 });
 
 module.exports = mongoose.model("Course", courseSchema, "courses");
