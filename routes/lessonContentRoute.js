@@ -32,7 +32,7 @@ const upload = require("../middlewares/uploadMiddleware"); // middleware multer 
  *           example: "672600f9de2b8a17d2d57d90"
  *         type:
  *           type: string
- *           enum: ["Video", "Reading", "File", "Quiz"]
+ *           enum: ["Video", "Article", "File", "Quiz", "Slide"]
  *           example: "Video"
  *         title:
  *           type: string
@@ -74,7 +74,7 @@ const upload = require("../middlewares/uploadMiddleware"); // middleware multer 
  *                 example: "69086f7666277f25d180f0ca"
  *               type:
  *                 type: string
- *                 enum: ["Video", "Reading", "File", "Quiz"]
+ *                 enum: ["Video", "Article", "File", "Quiz", "Slide"]
  *                 example: "Video"
  *               title:
  *                 type: string
@@ -88,6 +88,23 @@ const upload = require("../middlewares/uploadMiddleware"); // middleware multer 
  *               order:
  *                 type: number
  *                 example: 1
+ *               difficulty_init:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 1
+ *                 example: 0.5
+ *                 description: "Initial difficulty level (0 - 1)"
+ *               interactivity:
+ *                 type: string
+ *                 enum: ["low", "medium", "high"]
+ *                 example: "medium"
+ *                 description: "Level of learner interactivity"
+ *               difficulty_dyn:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 1
+ *                 example: 0.3
+ *                 description: "Dynamic difficulty based on learner performance"
  *               file:
  *                 type: string
  *                 format: binary
@@ -97,6 +114,7 @@ const upload = require("../middlewares/uploadMiddleware"); // middleware multer 
  *       400:
  *         description: Invalid request data
  */
+
 router.post(
   "/",
   auth,
@@ -173,6 +191,10 @@ router.get("/:id", auth, lessonContentController.getLessonContentById);
  *           schema:
  *             type: object
  *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: ["Video", "Article", "File", "Quiz", "Slide"]
+ *                 example: "Video"
  *               title:
  *                 type: string
  *                 example: "Updated Lesson Video"
@@ -185,6 +207,23 @@ router.get("/:id", auth, lessonContentController.getLessonContentById);
  *               order:
  *                 type: number
  *                 example: 2
+ *               difficulty_init:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 1
+ *                 example: 0.7
+ *                 description: "Initial difficulty level (0 - 1)"
+ *               interactivity:
+ *                 type: string
+ *                 enum: ["low", "medium", "high"]
+ *                 example: "high"
+ *                 description: "Level of learner interactivity"
+ *               difficulty_dyn:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 1
+ *                 example: 0.4
+ *                 description: "Dynamic difficulty based on learner performance"
  *               file:
  *                 type: string
  *                 format: binary
@@ -194,6 +233,7 @@ router.get("/:id", auth, lessonContentController.getLessonContentById);
  *       404:
  *         description: Lesson content not found
  */
+
 router.put(
   "/:id",
   auth,

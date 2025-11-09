@@ -7,7 +7,17 @@ const supabase = require("../config/supabase");
  */
 exports.createLessonContent = async (req, res) => {
   try {
-    const { lesson, type, title, content, duration, order } = req.body;
+    const {
+      lesson,
+      type,
+      title,
+      content,
+      duration,
+      order,
+      difficulty_init,
+      interactivity,
+      difficulty_dyn,
+    } = req.body;
 
     // Check lesson exists
     const foundLesson = await Lesson.findById(lesson);
@@ -52,6 +62,9 @@ exports.createLessonContent = async (req, res) => {
       content,
       duration,
       order,
+      difficulty_init,
+      interactivity,
+      difficulty_dyn,
       videoUrl,
       fileUrl,
     });
@@ -70,6 +83,7 @@ exports.createLessonContent = async (req, res) => {
     });
   }
 };
+
 
 /**
  * ✅ Get contents by lesson
@@ -123,19 +137,30 @@ exports.getLessonContentById = async (req, res) => {
 exports.updateLessonContent = async (req, res) => {
   try {
     const { id } = req.params;
-    const contentData = req.body;
+    const {
+      type,
+      title,
+      content: textContent,
+      duration,
+      order,
+      difficulty_init,
+      interactivity,
+      difficulty_dyn,
+    } = req.body;
 
     const content = await LessonContent.findById(id);
     if (!content)
-      return res.status(404).json({ success: false, message: "Lesson content not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Lesson content not found" });
 
     // Handle re-upload file/video if new file present
     if (req.file) {
       const file = req.file;
       const folder =
-        contentData.type === "Video"
+        type === "Video"
           ? "lesson-videos"
-          : contentData.type === "File"
+          : type === "File"
           ? "lesson-files"
           : "lesson-uploads";
       const fileName = `${Date.now()}-${file.originalname}`;
@@ -153,13 +178,20 @@ exports.updateLessonContent = async (req, res) => {
         .from(folder)
         .getPublicUrl(fileName);
 
-      if (contentData.type === "Video")
-        content.videoUrl = publicUrlData.publicUrl;
-      if (contentData.type === "File")
-        content.fileUrl = publicUrlData.publicUrl;
+      if (type === "Video") content.videoUrl = publicUrlData.publicUrl;
+      if (type === "File") content.fileUrl = publicUrlData.publicUrl;
     }
 
-    Object.assign(content, contentData);
+    // Update basic fields
+    if (type) content.type = type;
+    if (title) content.title = title;
+    if (textContent) content.content = textContent;
+    if (duration) content.duration = duration;
+    if (order) content.order = order;
+    if (difficulty_init !== undefined) content.difficulty_init = difficulty_init;
+    if (interactivity) content.interactivity = interactivity;
+    if (difficulty_dyn !== undefined) content.difficulty_dyn = difficulty_dyn;
+
     await content.save();
 
     return res.status(200).json({
@@ -168,6 +200,7 @@ exports.updateLessonContent = async (req, res) => {
       data: content,
     });
   } catch (error) {
+    console.error("Error updating lesson content:", error);
     return res.status(500).json({
       success: false,
       message: "Error updating lesson content",
@@ -175,6 +208,7 @@ exports.updateLessonContent = async (req, res) => {
     });
   }
 };
+
 
 /**
  * ✅ Delete a content

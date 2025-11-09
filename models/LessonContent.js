@@ -9,7 +9,7 @@ const lessonContentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Video", "Reading", "File", "Quiz"],
+      enum: ["Video", "Article", "File", "Quiz", "Slide"],
       required: true,
     },
     title: {
@@ -35,6 +35,23 @@ const lessonContentSchema = new mongoose.Schema(
     order: {
       type: Number,
       required: true,
+    },
+    difficulty_init: {
+      type: Number,
+      default: 0.5,
+      min : 0,
+      max : 1
+    },
+    interactivity: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
+    },
+    difficulty_dyn: {
+      type: Number,
+      default: 0,
+      min : 0,
+      max : 1
     },
   },
   { timestamps: true }
