@@ -2,37 +2,40 @@ const mongoose = require("mongoose");
 
 const quizSchema = new mongoose.Schema(
   {
+    title: { type: String, required: true },
+
+    description: { type: String, default: "" },
+
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+    },
+
     lesson: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lesson",
-      required: true,
     },
-    title: {
-      type: String,
-      required: true,
-    },
-    description: String,
-    timeLimit: Number,
-    passingScore: Number,
-    totalQuestions: Number,
 
-    // Danh sách question id được chọn từ bank
-    questions: [
+    questionBanks: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Question",
+        bank: { type: mongoose.Schema.Types.ObjectId, ref: "QuestionBank" },
+        numberOfQuestions: { type: Number },
       },
     ],
 
-    // Thông tin tạo quiz ngẫu nhiên (nếu có)
-    randomConfig: {
-      bank: { type: mongoose.Schema.Types.ObjectId, ref: "QuestionBank" },
-      numberOfQuestions: Number,
-      difficulty: {
-        type: String,
-        enum: ["easy", "medium", "hard", "mixed"],
-        default: "mixed",
-      },
+    questions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
+
+    timeLimit: { type: Number, default: 0 }, // phút, 0 = không giới hạn
+
+    attemptsAllowed: { type: Number, default: 1 },
+
+    randomOrder: { type: Boolean, default: true },
+
+    passingScore: { type: Number, default: 0 }, // theo %
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { timestamps: true }

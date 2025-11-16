@@ -48,6 +48,7 @@ app.use('/api/lesson-contents', lessonContentRoutes);
 // Quiz Services
 app.use('/api/question-banks', questionBankRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/quizzes', require('./routes/quizRoute'));
 
 
 
